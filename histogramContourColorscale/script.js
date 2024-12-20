@@ -1,0 +1,235 @@
+let isDrawing = false;
+let currentMode = null;
+let currentPoints = [];
+let allShapes = [];
+
+// 生成模拟数据 (5000个点)
+function generateData() {
+    const x = [];
+    const y = [];
+    for (let i = 0; i < 5000; i++) {
+        x.push(Math.random() * 100);
+        y.push(Math.random() * 100);
+    }
+    return { x, y };
+}
+
+// 初始化图表
+function initPlot() {
+    const data = generateData();
+    
+    const trace = {
+        x: data.x,
+        y: data.y,
+        type: 'histogram2dcontour',
+        colorscale: 'Viridis',
+        reversescale: false,
+        showscale: true,
+        contours: {
+            coloring: 'heatmap'
+        }
+    };
+
+    const layout = {
+        title: 'Histogram Contour Plot',
+        dragmode: 'pan',
+        hovermode: 'closest'
+    };
+
+    const config = {
+        responsive: true,
+        scrollZoom: true
+    };
+
+    Plotly.newPlot('plot', [trace], layout, config);
+
+    // 添加事件监听器
+    setupEventListeners();
+}
+
+// 设置事件监听器
+function setupEventListeners() {
+    const plot = document.getElementById('plot');
+    
+    document.getElementById('drawLine').onclick = () => {
+        currentMode = 'line';
+        isDrawing = true;
+        currentPoints = [];
+    };
+
+    document.getElementById('drawPolygon').onclick = () => {
+        currentMode = 'polygon';
+        isDrawing = true;
+        currentPoints = [];
+    };
+
+    document.getElementById('clear').onclick = clearShapes;
+    document.getElementById('updateAllLines').onclick = updateAllLines;
+    document.getElementById('updateAllPolygons').onclick = updateAllPolygons;
+    document.getElementById('updateSingleLine').onclick = updateSingleLine;
+
+    // 鼠标点击事件
+    plot.on('plotly_click', function(data) {
+        if (!isDrawing) return;
+        
+        const point = {
+            x: data.points[0].x,
+            y: data.points[0].y
+        };
+        
+        currentPoints.push(point);
+        updateDrawing();
+    });
+
+    // 右键点击完成绘制
+    plot.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        if (isDrawing) {
+            finishDrawing();
+        }
+    });
+}
+
+// 更新绘制
+function updateDrawing() {
+    if (currentPoints.length < 2) return;
+
+    const shape = {
+        type: currentMode,
+        x: currentPoints.map(p => p.x),
+        y: currentPoints.map(p => p.y),
+        mode: 'lines',
+        line: {
+            color: 'red',
+            width: 2
+        }
+    };
+
+    if (currentMode === 'polygon') {
+        shape.fill = 'toself';
+        shape.fillcolor = 'rgba(255, 0, 0, 0.2)';
+    }
+
+    const update = {
+        shapes: [[{
+            type: 'path',
+            path: generatePath(),
+            line: { color: 'red', width: 2 }
+        }]]
+    };
+
+    Plotly.relayout('plot', update);
+}
+
+// 完成绘制
+function finishDrawing() {
+    if (currentPoints.length < 2) return;
+
+    const shape = {
+        type: currentMode,
+        points: [...currentPoints]
+    };
+
+    allShapes.push(shape);
+    isDrawing = false;
+    currentPoints = [];
+    redrawAllShapes();
+}
+
+// 重绘所有图形
+function redrawAllShapes() {
+    const shapes = allShapes.map(shape => ({
+        type: 'path',
+        path: generatePathFromShape(shape),
+        line: { color: 'red', width: 2 },
+        fillcolor: shape.type === 'polygon' ? 'rgba(255, 0, 0, 0.2)' : undefined,
+        fill: shape.type === 'polygon' ? 'toself' : undefined
+    }));
+
+    Plotly.relayout('plot', { shapes: shapes });
+}
+
+// 生成路径
+function generatePath() {
+    if (currentPoints.length < 2) return '';
+    
+    let path = `M ${currentPoints[0].x},${currentPoints[0].y}`;
+    for (let i = 1; i < currentPoints.length; i++) {
+        path += ` L ${currentPoints[i].x},${currentPoints[i].y}`;
+    }
+    
+    if (currentMode === 'polygon') {
+        path += ' Z';
+    }
+    
+    return path;
+}
+
+// 从形状生成路径
+function generatePathFromShape(shape) {
+    const points = shape.points;
+    let path = `M ${points[0].x},${points[0].y}`;
+    for (let i = 1; i < points.length; i++) {
+        path += ` L ${points[i].x},${points[i].y}`;
+    }
+    if (shape.type === 'polygon') {
+        path += ' Z';
+    }
+    return path;
+}
+
+// 清除所有图形
+function clearShapes() {
+    allShapes = [];
+    Plotly.relayout('plot', { shapes: [] });
+}
+
+// 更新所有线段样式
+function updateAllLines() {
+    allShapes = allShapes.map(shape => {
+        if (shape.type === 'line') {
+            shape.style = {
+                color: `rgb(${Math.random()*255},${Math.random()*255},${Math.random()*255})`,
+                width: Math.random() * 5 + 1,
+                dash: ['solid', 'dot', 'dash'][Math.floor(Math.random() * 3)]
+            };
+        }
+        return shape;
+    });
+    redrawAllShapes();
+}
+
+// 更新所有多边形样式
+function updateAllPolygons() {
+    allShapes = allShapes.map(shape => {
+        if (shape.type === 'polygon') {
+            shape.style = {
+                lineColor: `rgb(${Math.random()*255},${Math.random()*255},${Math.random()*255})`,
+                fillColor: `rgba(${Math.random()*255},${Math.random()*255},${Math.random()*255},0.2)`,
+                width: Math.random() * 5 + 1,
+                dash: ['solid', 'dot', 'dash'][Math.floor(Math.random() * 3)]
+            };
+        }
+        return shape;
+    });
+    redrawAllShapes();
+}
+
+// 更新单个线段样式
+function updateSingleLine() {
+    // 这里可以添加交互式选择线段的逻辑
+    if (allShapes.length > 0) {
+        const randomIndex = Math.floor(Math.random() * allShapes.length);
+        if (allShapes[randomIndex].type === 'line') {
+            allShapes[randomIndex].style = {
+                color: `rgb(${Math.random()*255},${Math.random()*255},${Math.random()*255})`,
+                width: Math.random() * 5 + 1,
+                dash: ['solid', 'dot', 'dash'][Math.floor(Math.random() * 3)]
+            };
+        }
+        redrawAllShapes();
+    }
+}
+
+// 初始化
+document.addEventListener('DOMContentLoaded', initPlot); 
