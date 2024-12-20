@@ -82,7 +82,8 @@ function setupEventListeners() {
     plot.addEventListener('click', function(e) {
         if (!isDrawing) return;
 
-        const rect = plot.getBoundingClientRect();
+        // const rect = plot.getBoundingClientRect();
+        const rect = e.target.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
@@ -111,7 +112,8 @@ function setupEventListeners() {
     plot.addEventListener('mousemove', function(e) {
         if (!isDrawing || currentPoints.length === 0) return;
 
-        const rect = plot.getBoundingClientRect();
+        // const rect = plot.getBoundingClientRect();
+        const rect = e.target.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
