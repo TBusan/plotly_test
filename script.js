@@ -251,12 +251,19 @@ function finishDrawing() {
         return;
     }
     
-    const points = currentDrawing.map(p => ({x: p[0].toFixed(2), y: p[1].toFixed(2)}));
+    const points = currentDrawing.map(p => ({x: parseFloat(p[0].toFixed(2)), y: parseFloat(p[1].toFixed(2))}));
     const record = {
         type: drawingMode,
         points: points,
         timestamp: new Date().toLocaleString()
     };
+
+    // 根据类型添加长度或面积
+    if (drawingMode === 'line') {
+        record.length = calculateLineLength(points);
+    } else if (drawingMode === 'polygon') {
+        record.area = calculatePolygonArea(points);
+    }
     
     // 根据绘制模式保存图形
     if (drawingMode === 'line') {
@@ -300,6 +307,29 @@ function finishDrawing() {
     });
 }
 
+// 添加计算折线长度的函数
+function calculateLineLength(points) {
+    let totalLength = 0;
+    for (let i = 0; i < points.length - 1; i++) {
+        const dx = points[i + 1].x - points[i].x;
+        const dy = points[i + 1].y - points[i].y;
+        totalLength += Math.sqrt(dx * dx + dy * dy);
+    }
+    return totalLength.toFixed(2);
+}
+
+// 添加计算多边形面积的函数
+function calculatePolygonArea(points) {
+    let area = 0;
+    for (let i = 0; i < points.length; i++) {
+        const j = (i + 1) % points.length;
+        area += points[i].x * points[j].y;
+        area -= points[j].x * points[i].y;
+    }
+    area = Math.abs(area) / 2;
+    return area.toFixed(2);
+}
+
 // 修改 updateInfoPanel 函数
 function updateInfoPanel() {
     const infoDiv = document.getElementById('info');
@@ -322,6 +352,7 @@ function updateInfoPanel() {
                     <div style="margin-top: 5px;">
                         时间：${record.timestamp}<br>
                         点数：${record.points.length}<br>
+                        总长度：${record.length} 单位<br>
                         点坐标：<br>
                         ${record.points.map((p, i) => `点${i + 1}: (${p.x}, ${p.y})`).join('<br>')}
                     </div>
@@ -347,6 +378,7 @@ function updateInfoPanel() {
                     <div style="margin-top: 5px;">
                         时间：${record.timestamp}<br>
                         顶点数：${record.points.length}<br>
+                        面积：${record.area} 平方单位<br>
                         顶点坐标：<br>
                         ${record.points.map((p, i) => `顶点${i + 1}: (${p.x}, ${p.y})`).join('<br>')}
                     </div>
@@ -456,7 +488,7 @@ document.getElementById('updateAllPolygons').addEventListener('click', function(
     updatePlot();
 });
 
-// 11. 更新单个线���样式
+// 11. 更新单个线段样式
 document.getElementById('updateSingleLine').addEventListener('click', function() {
     // 实现更新单个线段样式的逻辑
     if (drawings.lines.length === 0) return;
@@ -543,7 +575,7 @@ function updatePlot() {
         }
     });
 
-    // ���新基础散点图的数据
+    // 更新基础散点图的数据
     const baseTrace = {
         ...data[0],
         marker: {
