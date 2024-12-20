@@ -10,6 +10,10 @@ let drawings = {
 };
 let isSelectMode = false;  // 添加选择模式状态标志
 let currentMousePosition = null;
+let drawingRecords = {
+    lines: [],
+    polygons: []
+};
 
 // 1. 创建散点图
 function createScatterPlot() {
@@ -150,7 +154,7 @@ document.getElementById('exitSelectMode').addEventListener('click', function() {
 
 // 3 & 4. 隐藏和显示点
 document.getElementById('hidePoints').addEventListener('click', function() {
-    if (selectedPoints.size === 0) return; // 如果没有选中的点，直���返回
+    if (selectedPoints.size === 0) return; // 如果没有选中的点��直接返回
     
     // 将选中的点添加到隐藏集合中
     selectedPoints.forEach(index => {
@@ -241,12 +245,18 @@ document.getElementById('plot').addEventListener('contextmenu', function(event) 
 // 添加完成绘制的函数
 function finishDrawing() {
     if (currentDrawing.length < 2) {
-        // 如果点数不足，取消绘制
         currentDrawing = [];
         drawingMode = null;
         currentMousePosition = null;
         return;
     }
+    
+    const points = currentDrawing.map(p => ({x: p[0].toFixed(2), y: p[1].toFixed(2)}));
+    const record = {
+        type: drawingMode,
+        points: points,
+        timestamp: new Date().toLocaleString()
+    };
     
     // 根据绘制模式保存图形
     if (drawingMode === 'line') {
@@ -258,6 +268,7 @@ function finishDrawing() {
                 dash: 'solid'
             }
         });
+        drawingRecords.lines.push(record);
     } else if (drawingMode === 'polygon') {
         drawings.polygons.push({
             points: [...currentDrawing],
@@ -267,7 +278,11 @@ function finishDrawing() {
                 linewidth: 2
             }
         });
+        drawingRecords.polygons.push(record);
     }
+    
+    // 更新信息显示
+    updateInfoPanel();
     
     // 重置绘制状态
     currentDrawing = [];
@@ -285,11 +300,53 @@ function finishDrawing() {
     });
 }
 
+// 添加更新信息面板的函数
+function updateInfoPanel() {
+    const infoDiv = document.getElementById('info');
+    let html = '<div style="padding: 10px; overflow-y: auto; height: 100%;">';
+    
+    // 添加折线记录
+    if (drawingRecords.lines.length > 0) {
+        html += '<h3>折线记录：</h3>';
+        drawingRecords.lines.forEach((record, index) => {
+            html += `
+                <div style="margin-bottom: 10px; padding: 5px; border: 1px solid #eee;">
+                    <strong>折线 ${index + 1}</strong> - ${record.timestamp}<br>
+                    点数：${record.points.length}<br>
+                    点坐标：<br>
+                    ${record.points.map((p, i) => `点${i + 1}: (${p.x}, ${p.y})`).join('<br>')}
+                </div>
+            `;
+        });
+    }
+    
+    // 添加多边形记录
+    if (drawingRecords.polygons.length > 0) {
+        html += '<h3>多边形记录：</h3>';
+        drawingRecords.polygons.forEach((record, index) => {
+            html += `
+                <div style="margin-bottom: 10px; padding: 5px; border: 1px solid #eee;">
+                    <strong>多边形 ${index + 1}</strong> - ${record.timestamp}<br>
+                    顶点数：${record.points.length}<br>
+                    顶点坐标：<br>
+                    ${record.points.map((p, i) => `顶点${i + 1}: (${p.x}, ${p.y})`).join('<br>')}
+                </div>
+            `;
+        });
+    }
+    
+    html += '</div>';
+    infoDiv.innerHTML = html;
+}
+
 // 8. 清除按钮
 document.getElementById('clear').addEventListener('click', function() {
     drawings.lines = [];
     drawings.polygons = [];
+    drawingRecords.lines = [];
+    drawingRecords.polygons = [];
     updatePlot();
+    updateInfoPanel();
 });
 
 // 9 & 10. 更新样式
