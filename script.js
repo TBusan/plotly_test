@@ -32,18 +32,6 @@ function createScatterPlot() {
                 width: 1,
                 color: 'rgba(0,0,0,0.3)'
             }
-        },
-        selectedpoints: [],
-        unselected: {
-            marker: { opacity: 0.3 }
-        },
-        selected: {
-            marker: { 
-                color: 'red',
-                size: 12,
-                opacity: 1,
-                symbol: 'square'
-            }
         }
     }];
 
@@ -57,8 +45,7 @@ function createScatterPlot() {
 
     // 修改点击事件监听器
 document.getElementById('plot').on('plotly_click', function(eventData) {
-    // 添加对 isSelectMode 的严格检查
-    if (!isSelectMode || drawingMode) return;  // 如果不是选择模式或在绘制模式下，直接返回
+    if (!isSelectMode || drawingMode) return;
     
     const pointIndex = eventData.points[0].pointIndex;
     
@@ -69,18 +56,17 @@ document.getElementById('plot').on('plotly_click', function(eventData) {
     }
 
     // 更新选中点的样式
-    const selectedStyle = new Array(data[0].x.length).fill(false);
+    const lineWidths = new Array(data[0].x.length).fill(1);
+    const lineColors = new Array(data[0].x.length).fill('rgba(0,0,0,0.3)');
+    
     selectedPoints.forEach(index => {
-        selectedStyle[index] = true;
+        lineWidths[index] = 3;  // 加粗边框
+        lineColors[index] = 'red';  // 边框改为红色
     });
 
     Plotly.restyle('plot', {
-        'marker.color': [selectedStyle.map((isSelected, i) => 
-            isSelected ? 'red' : data[0].marker.color[i]
-        )],
-        'marker.size': [selectedStyle.map(isSelected => 
-            isSelected ? 12 : 10
-        )]
+        'marker.line.width': [lineWidths],
+        'marker.line.color': [lineColors]
     }, [0]);
 });
 
@@ -301,26 +287,21 @@ document.getElementById('updateSingleLine').addEventListener('click', function()
 
 // 辅助函数
 function updatePointsVisibility() {
-    // 创建一个新的颜色数组，隐藏的点设置为透明
-    const colors = data[0].x.map((_, i) => {
-        if (hiddenPoints.has(i)) {
-            return 'rgba(0,0,0,0)'; // 完全透明
+    const sizes = data[0].x.map((_, i) => hiddenPoints.has(i) ? 0 : 10);
+    const lineWidths = new Array(data[0].x.length).fill(1);
+    const lineColors = new Array(data[0].x.length).fill('rgba(0,0,0,0.3)');
+    
+    selectedPoints.forEach(index => {
+        if (!hiddenPoints.has(index)) {
+            lineWidths[index] = 3;
+            lineColors[index] = 'red';
         }
-        return selectedPoints.has(i) ? 'red' : data[0].marker.color[i];
     });
 
-    // 创建一个新的大小数组
-    const sizes = data[0].x.map((_, i) => {
-        if (hiddenPoints.has(i)) {
-            return 0; // 隐藏的点大小设为0
-        }
-        return selectedPoints.has(i) ? 12 : 10;
-    });
-
-    // 更新点的样式
     Plotly.restyle('plot', {
-        'marker.color': [colors],
-        'marker.size': [sizes]
+        'marker.size': [sizes],
+        'marker.line.width': [lineWidths],
+        'marker.line.color': [lineColors]
     }, [0]);
 }
 
@@ -348,19 +329,15 @@ function updateDrawing() {
 }
 
 function updatePlot() {
-    // 创建基础散点图的颜色和大小数组
-    const colors = data[0].x.map((_, i) => {
-        if (hiddenPoints.has(i)) {
-            return 'rgba(0,0,0,0)'; // 完全透明
+    // 创建边框样式数组
+    const lineWidths = new Array(data[0].x.length).fill(1);
+    const lineColors = new Array(data[0].x.length).fill('rgba(0,0,0,0.3)');
+    
+    selectedPoints.forEach(index => {
+        if (!hiddenPoints.has(index)) {
+            lineWidths[index] = 3;
+            lineColors[index] = 'red';
         }
-        return selectedPoints.has(i) ? 'red' : data[0].marker.color[i];
-    });
-
-    const sizes = data[0].x.map((_, i) => {
-        if (hiddenPoints.has(i)) {
-            return 0; // 隐藏的点大小设为0
-        }
-        return selectedPoints.has(i) ? 12 : 10;
     });
 
     // 更新基础散点图的数据
@@ -368,8 +345,11 @@ function updatePlot() {
         ...data[0],
         marker: {
             ...data[0].marker,
-            color: colors,
-            size: sizes
+            size: data[0].x.map((_, i) => hiddenPoints.has(i) ? 0 : 10),
+            line: {
+                width: lineWidths,
+                color: lineColors
+            }
         }
     };
 
