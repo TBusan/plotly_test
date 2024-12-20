@@ -38,7 +38,9 @@ function initPlot() {
 
     const config = {
         responsive: true,
-        scrollZoom: true
+        scrollZoom: true,
+        displayModeBar: false,  // 禁用工具栏显示
+        displaylogo: false      // 禁用 Plotly logo
     };
 
     Plotly.newPlot('plot', [trace], layout, config);
