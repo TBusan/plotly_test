@@ -84,7 +84,7 @@ document.getElementById('selectMode').addEventListener('click', function() {
     plot.classList.remove('drawing-cursor');
     drawingMode = null;
     
-    // 置布局为非绘制模式
+    // ���布局为非绘制模式
     Plotly.relayout('plot', {
         dragmode: 'pan'
     });
@@ -143,6 +143,12 @@ function setupDrawingMode() {
 document.getElementById('plot').addEventListener('click', function(event) {
     if (!drawingMode) return;
     
+    // 如果是右键点击，结束绘制
+    if (event.button === 2) {
+        finishDrawing();
+        return;
+    }
+    
     const plotRect = event.target.getBoundingClientRect();
     const x = event.clientX - plotRect.left;
     const y = event.clientY - plotRect.top;
@@ -156,6 +162,60 @@ document.getElementById('plot').addEventListener('click', function(event) {
     currentDrawing.push([dataX, dataY]);
     updateDrawing();
 });
+
+// 添加右键事件监听器
+document.getElementById('plot').addEventListener('contextmenu', function(event) {
+    event.preventDefault(); // 阻止默认的右键菜单
+    
+    if (!drawingMode) return;
+    
+    finishDrawing();
+});
+
+// 添加完成绘制的函数
+function finishDrawing() {
+    if (currentDrawing.length < 2) {
+        // 如果点数不足，取消绘制
+        currentDrawing = [];
+        drawingMode = null;
+        return;
+    }
+    
+    // 根据绘制模式保存图形
+    if (drawingMode === 'line') {
+        drawings.lines.push({
+            points: [...currentDrawing],
+            style: {
+                color: 'rgb(0,0,255)',
+                width: 2,
+                dash: 'solid'
+            }
+        });
+    } else if (drawingMode === 'polygon') {
+        drawings.polygons.push({
+            points: [...currentDrawing],
+            style: {
+                fillcolor: 'rgba(0,0,255,0.2)',
+                linecolor: 'rgb(0,0,255)',
+                linewidth: 2
+            }
+        });
+    }
+    
+    // 重置绘制状态
+    currentDrawing = [];
+    drawingMode = null;
+    
+    // 更新图表显示
+    updatePlot();
+    
+    // 重置鼠标样式和拖动模式
+    const plot = document.getElementById('plot');
+    plot.classList.remove('drawing-cursor');
+    Plotly.relayout('plot', {
+        dragmode: 'pan'
+    });
+}
 
 // 8. 清除按钮
 document.getElementById('clear').addEventListener('click', function() {
@@ -239,13 +299,21 @@ function updateDrawing() {
     
     const trace = {
         type: 'scatter',
-        mode: 'lines',
+        mode: 'lines+markers',  // 添加markers以显示点
         x: currentDrawing.map(p => p[0]),
         y: currentDrawing.map(p => p[1]),
-        line: { color: 'red', width: 2 }
+        line: { color: 'red', width: 2 },
+        marker: { color: 'red', size: 8 }  // 添加点的样式
     };
     
-    Plotly.update('plot', {}, {shapes: []});
+    // 如果是多边形模式，添加闭合线
+    if (drawingMode === 'polygon' && currentDrawing.length > 2) {
+        trace.x.push(currentDrawing[0][0]);
+        trace.y.push(currentDrawing[0][1]);
+    }
+    
+    // 更新图表，保持之前的所有内容
+    updatePlot();
     Plotly.addTraces('plot', trace);
 }
 
