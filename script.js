@@ -41,12 +41,40 @@ function createScatterPlot() {
     }];
 
     layout = {
-        dragmode: 'select',
+        dragmode: 'pan',
         hovermode: 'closest',
         showlegend: false
     };
 
     Plotly.newPlot('plot', data, layout);
+
+    // 添加点击事件监听器
+    document.getElementById('plot').on('plotly_click', function(eventData) {
+        if (!drawingMode) {  // 只在非绘制模式下处理点击选择
+            const pointIndex = eventData.points[0].pointIndex;
+            
+            if (selectedPoints.has(pointIndex)) {
+                selectedPoints.delete(pointIndex);
+            } else {
+                selectedPoints.add(pointIndex);
+            }
+
+            // 更新选中点的样式
+            const selectedStyle = new Array(data[0].x.length).fill(false);
+            selectedPoints.forEach(index => {
+                selectedStyle[index] = true;
+            });
+
+            Plotly.restyle('plot', {
+                'marker.color': [selectedStyle.map((isSelected, i) => 
+                    isSelected ? 'red' : data[0].marker.color[i]
+                )],
+                'marker.size': [selectedStyle.map(isSelected => 
+                    isSelected ? 12 : 10
+                )]
+            }, [0]);
+        }
+    });
 }
 
 // 2. 选择模式
@@ -55,6 +83,11 @@ document.getElementById('selectMode').addEventListener('click', function() {
     plot.classList.add('select-cursor');
     plot.classList.remove('drawing-cursor');
     drawingMode = null;
+    
+    // 重置布局为非绘制模式
+    Plotly.relayout('plot', {
+        dragmode: 'pan'
+    });
 });
 
 // 3 & 4. 隐藏和显示点
@@ -86,6 +119,11 @@ function setupDrawingMode() {
     plot.classList.add('drawing-cursor');
     plot.classList.remove('select-cursor');
     currentDrawing = [];
+    
+    // 更改布局为绘制模式
+    Plotly.relayout('plot', {
+        dragmode: false  // 禁用拖动以便绘制
+    });
 }
 
 // 7. 处理绘制事件
