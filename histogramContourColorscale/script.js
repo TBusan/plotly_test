@@ -2,6 +2,7 @@ let isDrawing = false;
 let currentMode = null;
 let currentPoints = [];
 let allShapes = [];
+let selectedShapeIndex = -1;
 
 // 添加预定义的颜色配置方案
 const colorScales = [
@@ -55,7 +56,7 @@ function initPlot() {
     const config = {
         responsive: true,
         scrollZoom: true,
-        displayModeBar: false,  // 禁用工具栏显示
+        displayModeBar: false,  // 禁用���具栏显示
         displaylogo: false      // 禁用 Plotly logo
     };
 
@@ -97,21 +98,32 @@ function setupEventListeners() {
 
     // 替换点击事件为鼠标点击事件
     plot.addEventListener('click', function(e) {
-        if (!isDrawing) return;
+        if (isDrawing) {
+            // 如果正在绘制，执行原有的绘制逻辑
+            const rect = e.target.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const xaxis = plot._fullLayout.xaxis;
+            const yaxis = plot._fullLayout.yaxis;
+            const dataX = xaxis.p2d(x);
+            const dataY = yaxis.p2d(y);
 
-        // const rect = plot.getBoundingClientRect();
-        const rect = e.target.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+            currentPoints.push({ x: dataX, y: dataY });
+            updateDrawing();
+        } else {
+            // 如果不在绘制状态，检查是否点击到了图形
+            const rect = e.target.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const xaxis = plot._fullLayout.xaxis;
+            const yaxis = plot._fullLayout.yaxis;
+            const dataX = xaxis.p2d(x);
+            const dataY = yaxis.p2d(y);
 
-        // 转换像素坐标到数据坐标
-        const xaxis = plot._fullLayout.xaxis;
-        const yaxis = plot._fullLayout.yaxis;
-        const dataX = xaxis.p2d(x);
-        const dataY = yaxis.p2d(y);
-
-        currentPoints.push({ x: dataX, y: dataY });
-        updateDrawing();
+            checkShapeSelection({ x: dataX, y: dataY });
+        }
     });
 
     // 右键点击完成绘制
@@ -236,18 +248,24 @@ function finishDrawing() {
 
 // 重绘所有图形
 function redrawAllShapes() {
-    const shapes = allShapes.map(shape => ({
-        type: 'path',
-        path: generatePathFromShape(shape),
-        line: {
-            color: shape.style?.color || 'red',
-            width: shape.style?.width || 2,
-            dash: shape.style?.dash || 'solid'
-        },
-        fillcolor: shape.type === 'polygon' ? 
-            (shape.style?.fillcolor || 'rgba(255, 0, 0, 0.2)') : undefined,
-        fill: shape.type === 'polygon' ? 'toself' : undefined
-    }));
+    const shapes = allShapes.map((shape, index) => {
+        const isSelected = index === selectedShapeIndex;
+        const baseStyle = shape.style || {};
+        
+        return {
+            type: 'path',
+            path: generatePathFromShape(shape),
+            line: {
+                color: isSelected ? '#ff0000' : (baseStyle.color || 'red'),
+                width: isSelected ? (baseStyle.width || 2) + 2 : (baseStyle.width || 2),
+                dash: baseStyle.dash || 'solid'
+            },
+            fillcolor: shape.type === 'polygon' ? 
+                (isSelected ? 'rgba(255,0,0,0.4)' : (baseStyle.fillcolor || 'rgba(255,0,0,0.2)')) : 
+                undefined,
+            fill: shape.type === 'polygon' ? 'toself' : undefined
+        };
+    });
 
     Plotly.relayout('plot', { shapes: shapes });
 }
@@ -350,6 +368,94 @@ function updateColorScale() {
         'colorscale': newColorScale
     });
 }
+
+// 添加检查图形选择的函数
+function checkShapeSelection(point) {
+    let minDistance = Infinity;
+    let selectedIndex = -1;
+
+    allShapes.forEach((shape, index) => {
+        if (shape.type === 'line') {
+            // 检查点到线段的距离
+            for (let i = 0; i < shape.points.length - 1; i++) {
+                const distance = pointToLineDistance(
+                    point,
+                    shape.points[i],
+                    shape.points[i + 1]
+                );
+                if (distance < minDistance && distance < 5) { // 5是选择容差
+                    minDistance = distance;
+                    selectedIndex = index;
+                }
+            }
+        } else if (shape.type === 'polygon') {
+            // 检查点是否在多边形内
+            if (isPointInPolygon(point, shape.points)) {
+                selectedIndex = index;
+                minDistance = 0;
+            }
+        }
+    });
+
+    // 更新选中状态并重绘
+    selectedShapeIndex = selectedIndex;
+    redrawAllShapes();
+}
+
+// 计算点到线段的距离
+function pointToLineDistance(point, lineStart, lineEnd) {
+    const A = point.x - lineStart.x;
+    const B = point.y - lineStart.y;
+    const C = lineEnd.x - lineStart.x;
+    const D = lineEnd.y - lineStart.y;
+
+    const dot = A * C + B * D;
+    const lenSq = C * C + D * D;
+    let param = -1;
+
+    if (lenSq !== 0) {
+        param = dot / lenSq;
+    }
+
+    let xx, yy;
+
+    if (param < 0) {
+        xx = lineStart.x;
+        yy = lineStart.y;
+    } else if (param > 1) {
+        xx = lineEnd.x;
+        yy = lineEnd.y;
+    } else {
+        xx = lineStart.x + param * C;
+        yy = lineStart.y + param * D;
+    }
+
+    const dx = point.x - xx;
+    const dy = point.y - yy;
+
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+// 检查点是否在多边形内
+function isPointInPolygon(point, polygon) {
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const xi = polygon[i].x, yi = polygon[i].y;
+        const xj = polygon[j].x, yj = polygon[j].y;
+
+        const intersect = ((yi > point.y) !== (yj > point.y))
+            && (point.x < (xj - xi) * (point.y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+    }
+    return inside;
+}
+
+// 初始化
+document.addEventListener('DOMContentLoaded', initPlot); 
+//     Plotly.restyle('plot', {
+//         'colorscale': newColorScale
+//     });
+// }
 
 // 初始化
 document.addEventListener('DOMContentLoaded', initPlot); 
