@@ -55,12 +55,20 @@ function setupEventListeners() {
         currentMode = 'line';
         isDrawing = true;
         currentPoints = [];
+        // 修改鼠标样式
+        plot.style.cursor = 'crosshair';
+        // 禁用拖动
+        Plotly.relayout('plot', { dragmode: false });
     };
 
     document.getElementById('drawPolygon').onclick = () => {
         currentMode = 'polygon';
         isDrawing = true;
         currentPoints = [];
+        // 修改鼠标样式
+        plot.style.cursor = 'crosshair';
+        // 禁用拖动
+        Plotly.relayout('plot', { dragmode: false });
     };
 
     document.getElementById('clear').onclick = clearShapes;
@@ -68,57 +76,117 @@ function setupEventListeners() {
     document.getElementById('updateAllPolygons').onclick = updateAllPolygons;
     document.getElementById('updateSingleLine').onclick = updateSingleLine;
 
-    // 鼠标点击事件
-    plot.on('plotly_click', function(data) {
+    // 替换点击事件为鼠标点击事件
+    plot.addEventListener('click', function(e) {
         if (!isDrawing) return;
-        
-        const point = {
-            x: data.points[0].x,
-            y: data.points[0].y
-        };
-        
-        currentPoints.push(point);
+
+        const rect = plot.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // 转换像素坐标到数据坐标
+        const xaxis = plot._fullLayout.xaxis;
+        const yaxis = plot._fullLayout.yaxis;
+        const dataX = xaxis.p2d(x);
+        const dataY = yaxis.p2d(y);
+
+        currentPoints.push({ x: dataX, y: dataY });
         updateDrawing();
     });
 
     // 右键点击完成绘制
     plot.addEventListener('contextmenu', function(e) {
         e.preventDefault();
-        if (isDrawing) {
+        if (isDrawing && currentPoints.length >= 2) {
             finishDrawing();
+            // 恢复鼠标样式和拖动模式
+            plot.style.cursor = '';
+            Plotly.relayout('plot', { dragmode: 'pan' });
         }
+    });
+
+    // 添加鼠标移动事件以显示预览线
+    plot.addEventListener('mousemove', function(e) {
+        if (!isDrawing || currentPoints.length === 0) return;
+
+        const rect = plot.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        const xaxis = plot._fullLayout.xaxis;
+        const yaxis = plot._fullLayout.yaxis;
+        const dataX = xaxis.p2d(x);
+        const dataY = yaxis.p2d(y);
+
+        updateDrawingWithPreview(dataX, dataY);
     });
 }
 
-// 更新绘制
+// 添加带预览的更新绘制函数
+function updateDrawingWithPreview(previewX, previewY) {
+    if (currentPoints.length === 0) return;
+
+    const points = [...currentPoints, { x: previewX, y: previewY }];
+    let path = `M ${points[0].x},${points[0].y}`;
+    
+    for (let i = 1; i < points.length; i++) {
+        path += ` L ${points[i].x},${points[i].y}`;
+    }
+
+    if (currentMode === 'polygon' && points.length > 2) {
+        path += ' Z';
+    }
+
+    const shapes = [...allShapes.map(shape => ({
+        type: 'path',
+        path: generatePathFromShape(shape),
+        line: { color: 'red', width: 2 },
+        fillcolor: shape.type === 'polygon' ? 'rgba(255, 0, 0, 0.2)' : undefined,
+        fill: shape.type === 'polygon' ? 'toself' : undefined
+    })), {
+        type: 'path',
+        path: path,
+        line: { 
+            color: 'red', 
+            width: 2,
+            dash: 'dash' // 预览线使用虚线
+        },
+        fillcolor: currentMode === 'polygon' ? 'rgba(255, 0, 0, 0.1)' : undefined,
+        fill: currentMode === 'polygon' ? 'toself' : undefined
+    }];
+
+    Plotly.relayout('plot', { shapes: shapes });
+}
+
+// 修改 updateDrawing 函数
 function updateDrawing() {
     if (currentPoints.length < 2) return;
 
-    const shape = {
-        type: currentMode,
-        x: currentPoints.map(p => p.x),
-        y: currentPoints.map(p => p.y),
-        mode: 'lines',
-        line: {
-            color: 'red',
-            width: 2
-        }
-    };
-
-    if (currentMode === 'polygon') {
-        shape.fill = 'toself';
-        shape.fillcolor = 'rgba(255, 0, 0, 0.2)';
+    let path = `M ${currentPoints[0].x},${currentPoints[0].y}`;
+    
+    for (let i = 1; i < currentPoints.length; i++) {
+        path += ` L ${currentPoints[i].x},${currentPoints[i].y}`;
     }
 
-    const update = {
-        shapes: [[{
-            type: 'path',
-            path: generatePath(),
-            line: { color: 'red', width: 2 }
-        }]]
-    };
+    if (currentMode === 'polygon' && currentPoints.length > 2) {
+        path += ' Z';
+    }
 
-    Plotly.relayout('plot', update);
+    const shapes = [...allShapes.map(shape => ({
+        type: 'path',
+        path: generatePathFromShape(shape),
+        line: { color: 'red', width: 2 },
+        fillcolor: shape.type === 'polygon' ? 'rgba(255, 0, 0, 0.2)' : undefined,
+        fill: shape.type === 'polygon' ? 'toself' : undefined
+    })), {
+        type: 'path',
+        path: path,
+        line: { color: 'red', width: 2 },
+        fillcolor: currentMode === 'polygon' ? 'rgba(255, 0, 0, 0.2)' : undefined,
+        fill: currentMode === 'polygon' ? 'toself' : undefined
+    }];
+
+    Plotly.relayout('plot', { shapes: shapes });
 }
 
 // 完成绘制
