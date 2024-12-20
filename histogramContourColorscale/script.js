@@ -28,11 +28,16 @@ let overviewPlot = null;
 function generateData() {
     const x = [];
     const y = [];
+    const values = [];  // 添加 value 数组
+    
     for (let i = 0; i < 10000; i++) {
         x.push(Math.random() * 100);
         y.push(Math.random() * 100);
+        // 生成1-100的随机值
+        values.push(Math.floor(Math.random() * 100) + 1);
     }
-    return { x, y };
+    // return { x, y, values };
+    return { x:mockDataX, y:mockDataZ, values:mockDataV };
 }
 
 // 初始化图表
@@ -47,6 +52,7 @@ function initPlot() {
         colorscale: colorScales[currentColorScaleIndex],
         reversescale: false,
         showscale: true,
+        z: data.values,  // 使用 values 作为颜色深浅的依据
         contours: {
             coloring: 'heatmap'
         }
@@ -68,7 +74,8 @@ function initPlot() {
     // 鹰眼图表配置
     const overviewTrace = {
         ...trace,
-        showscale: false  // 不显示颜色条
+        showscale: false,  // 不显示颜色条
+        z: data.values     // 确保鹰眼图也使用相同的值
     };
 
     const overviewLayout = {
@@ -180,7 +187,7 @@ function setupEventListeners() {
         }
     });
 
-    // 添加鼠标移���事件以显示预览线
+    // 添加鼠标移动事件以显示预览线
     plot.addEventListener('mousemove', function(e) {
         if (!isDrawing || currentPoints.length === 0) return;
 
