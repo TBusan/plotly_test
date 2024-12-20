@@ -1,0 +1,29 @@
+.controls {
+    margin: 10px;
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+}
+
+button {
+    margin: 5px;
+    padding: 8px 15px;
+    cursor: pointer;
+}
+
+#plot {
+    width: 100%;
+    height: 800px;
+}
+
+.selected-point {
+    stroke: #ff0000;
+    stroke-width: 2px;
+}
+
+.drawing-cursor {
+    cursor: crosshair;
+}
+
+.select-cursor {
+    cursor: pointer;
+} 

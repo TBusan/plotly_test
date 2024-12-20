@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plotly Interactive Visualization</title>
+    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="controls">
+        <button id="selectMode">选择模式</button>
+        <button id="hidePoints">隐藏选中点</button>
+        <button id="showPoints">显示隐藏点</button>
+        <button id="drawLine">绘制折线</button>
+        <button id="drawPolygon">绘制多边形</button>
+        <button id="clear">清除绘制</button>
+        <button id="updateAllLines">更新所有线段样式</button>
+        <button id="updateAllPolygons">更新所有多边形样式</button>
+        <button id="updateSingleLine">更新单个线段样式</button>
+    </div>
+    <div id="plot"></div>
+</body>
+<script src="script.js"></script>
+</html> 
