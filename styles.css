@@ -44,3 +44,16 @@ button {
 .drawing-cursor .nsewdrag {
     cursor: crosshair !important;
 } 
+
+
+#info {
+    position: absolute;
+    bottom: 10px;
+    height: 300px;
+    z-index: 1000;
+    margin: 0 auto;
+    border: 1px solid #ccc;
+    width: 60%;
+    left: 50%;
+    transform: translateX(-50%);
+}
