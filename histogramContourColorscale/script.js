@@ -3,11 +3,27 @@ let currentMode = null;
 let currentPoints = [];
 let allShapes = [];
 
+// 添加预定义的颜色配置方案
+const colorScales = [
+    'Viridis',     // 默认
+    'Plasma',      // 紫橙色渐变
+    'Inferno',     // 黑红黄渐变
+    'Magma',       // 黑紫黄渐变
+    'RdBu',        // 红蓝渐变
+    'Jet',         // 彩虹色
+    'Hot',         // 热力图
+    'Portland',    // 紫绿渐变
+    'Electric',    // 电力图
+    'Earth'        // 地球色系
+];
+
+let currentColorScaleIndex = 0;
+
 // 生成模拟数据 (5000个点)
 function generateData() {
     const x = [];
     const y = [];
-    for (let i = 0; i < 5000; i++) {
+    for (let i = 0; i < 10000; i++) {
         x.push(Math.random() * 100);
         y.push(Math.random() * 100);
     }
@@ -22,7 +38,7 @@ function initPlot() {
         x: data.x,
         y: data.y,
         type: 'histogram2dcontour',
-        colorscale: 'Viridis',
+        colorscale: colorScales[currentColorScaleIndex],  // 使用当前颜色配置
         reversescale: false,
         showscale: true,
         contours: {
@@ -77,6 +93,7 @@ function setupEventListeners() {
     document.getElementById('updateAllLines').onclick = updateAllLines;
     document.getElementById('updateAllPolygons').onclick = updateAllPolygons;
     document.getElementById('updateSingleLine').onclick = updateSingleLine;
+    document.getElementById('updateColorScale').onclick = updateColorScale;
 
     // 替换点击事件为鼠标点击事件
     plot.addEventListener('click', function(e) {
@@ -199,7 +216,16 @@ function finishDrawing() {
 
     const shape = {
         type: currentMode,
-        points: [...currentPoints]
+        points: [...currentPoints],
+        style: currentMode === 'polygon' ? {
+            color: 'red',
+            width: 2,
+            fillcolor: 'rgba(255, 0, 0, 0.2)'
+        } : {
+            color: 'red',
+            width: 2,
+            dash: 'solid'
+        }
     };
 
     allShapes.push(shape);
@@ -213,8 +239,13 @@ function redrawAllShapes() {
     const shapes = allShapes.map(shape => ({
         type: 'path',
         path: generatePathFromShape(shape),
-        line: { color: 'red', width: 2 },
-        fillcolor: shape.type === 'polygon' ? 'rgba(255, 0, 0, 0.2)' : undefined,
+        line: {
+            color: shape.style?.color || 'red',
+            width: shape.style?.width || 2,
+            dash: shape.style?.dash || 'solid'
+        },
+        fillcolor: shape.type === 'polygon' ? 
+            (shape.style?.fillcolor || 'rgba(255, 0, 0, 0.2)') : undefined,
         fill: shape.type === 'polygon' ? 'toself' : undefined
     }));
 
@@ -261,7 +292,7 @@ function updateAllLines() {
     allShapes = allShapes.map(shape => {
         if (shape.type === 'line') {
             shape.style = {
-                color: `rgb(${Math.random()*255},${Math.random()*255},${Math.random()*255})`,
+                color: `rgb(${Math.floor(Math.random()*255)},${Math.floor(Math.random()*255)},${Math.floor(Math.random()*255)})`,
                 width: Math.random() * 5 + 1,
                 dash: ['solid', 'dot', 'dash'][Math.floor(Math.random() * 3)]
             };
@@ -275,11 +306,13 @@ function updateAllLines() {
 function updateAllPolygons() {
     allShapes = allShapes.map(shape => {
         if (shape.type === 'polygon') {
+            const r = Math.floor(Math.random()*255);
+            const g = Math.floor(Math.random()*255);
+            const b = Math.floor(Math.random()*255);
             shape.style = {
-                lineColor: `rgb(${Math.random()*255},${Math.random()*255},${Math.random()*255})`,
-                fillColor: `rgba(${Math.random()*255},${Math.random()*255},${Math.random()*255},0.2)`,
+                color: `rgb(${r},${g},${b})`,
                 width: Math.random() * 5 + 1,
-                dash: ['solid', 'dot', 'dash'][Math.floor(Math.random() * 3)]
+                fillcolor: `rgba(${r},${g},${b},0.2)`
             };
         }
         return shape;
@@ -289,18 +322,33 @@ function updateAllPolygons() {
 
 // 更新单个线段样式
 function updateSingleLine() {
-    // 这里可以添加交互式选择线段的逻辑
-    if (allShapes.length > 0) {
-        const randomIndex = Math.floor(Math.random() * allShapes.length);
-        if (allShapes[randomIndex].type === 'line') {
-            allShapes[randomIndex].style = {
-                color: `rgb(${Math.random()*255},${Math.random()*255},${Math.random()*255})`,
-                width: Math.random() * 5 + 1,
-                dash: ['solid', 'dot', 'dash'][Math.floor(Math.random() * 3)]
-            };
-        }
-        redrawAllShapes();
-    }
+    const lineShapes = allShapes.filter(shape => shape.type === 'line');
+    if (lineShapes.length === 0) return;
+
+    // 随机选择一个线段
+    const randomIndex = Math.floor(Math.random() * lineShapes.length);
+    const actualIndex = allShapes.findIndex(shape => shape === lineShapes[randomIndex]);
+
+    // 更新样式
+    allShapes[actualIndex].style = {
+        color: `rgb(${Math.floor(Math.random()*255)},${Math.floor(Math.random()*255)},${Math.floor(Math.random()*255)})`,
+        width: Math.random() * 5 + 1,
+        dash: ['solid', 'dot', 'dash'][Math.floor(Math.random() * 3)]
+    };
+
+    redrawAllShapes();
+}
+
+// 添加更新颜色配置的函数
+function updateColorScale() {
+    // 循环切换颜色配置
+    currentColorScaleIndex = (currentColorScaleIndex + 1) % colorScales.length;
+    const newColorScale = colorScales[currentColorScaleIndex];
+    
+    // 更新图表的颜色配置
+    Plotly.restyle('plot', {
+        'colorscale': newColorScale
+    });
 }
 
 // 初始化
