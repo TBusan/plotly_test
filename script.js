@@ -25,7 +25,12 @@ function createScatterPlot() {
         y: y,
         marker: {
             color: colors,
-            size: 10
+            size: 10,
+            symbol: 'square',
+            line: {
+                width: 1,
+                color: 'rgba(0,0,0,0.3)'
+            }
         },
         selectedpoints: [],
         unselected: {
@@ -35,7 +40,8 @@ function createScatterPlot() {
             marker: { 
                 color: 'red',
                 size: 12,
-                opacity: 1
+                opacity: 1,
+                symbol: 'square'
             }
         }
     }];
@@ -84,7 +90,7 @@ document.getElementById('selectMode').addEventListener('click', function() {
     plot.classList.remove('drawing-cursor');
     drawingMode = null;
     
-    // ���布局为非绘制模式
+    // 布局为非绘制模式
     Plotly.relayout('plot', {
         dragmode: 'pan'
     });
