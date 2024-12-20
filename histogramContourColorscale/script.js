@@ -20,6 +20,10 @@ const colorScales = [
 
 let currentColorScaleIndex = 0;
 
+// 添加全局变量
+let mainPlot = null;
+let overviewPlot = null;
+
 // 生成模拟数据 (5000个点)
 function generateData() {
     const x = [];
@@ -35,11 +39,12 @@ function generateData() {
 function initPlot() {
     const data = generateData();
     
+    // 主图表配置
     const trace = {
         x: data.x,
         y: data.y,
         type: 'histogram2dcontour',
-        colorscale: colorScales[currentColorScaleIndex],  // 使用当前颜色配置
+        colorscale: colorScales[currentColorScaleIndex],
         reversescale: false,
         showscale: true,
         contours: {
@@ -56,11 +61,49 @@ function initPlot() {
     const config = {
         responsive: true,
         scrollZoom: true,
-        displayModeBar: false,  // 禁用���具栏显示
-        displaylogo: false      // 禁用 Plotly logo
+        displayModeBar: false,
+        displaylogo: false
     };
 
-    Plotly.newPlot('plot', [trace], layout, config);
+    // 鹰眼图表配置
+    const overviewTrace = {
+        ...trace,
+        showscale: false  // 不显示颜色条
+    };
+
+    const overviewLayout = {
+        dragmode: false,
+        showlegend: false,
+        margin: { l: 20, r: 20, t: 20, b: 20 },
+        xaxis: {
+            showgrid: false,
+            zeroline: false,
+            showticklabels: false
+        },
+        yaxis: {
+            showgrid: false,
+            zeroline: false,
+            showticklabels: false
+        }
+    };
+
+    const overviewConfig = {
+        responsive: true,
+        displayModeBar: false,
+        displaylogo: false,
+        staticPlot: true  // 禁用所有交互
+    };
+
+    // 创建主图表和鹰眼图表
+    Plotly.newPlot('plot', [trace], layout, config).then(function(gd) {
+        mainPlot = gd;
+        // 监听主图表的范围变化
+        mainPlot.on('plotly_relayout', updateOverviewBox);
+    });
+
+    Plotly.newPlot('overview', [overviewTrace], overviewLayout, overviewConfig).then(function(gd) {
+        overviewPlot = gd;
+    });
 
     // 添加事件监听器
     setupEventListeners();
@@ -137,7 +180,7 @@ function setupEventListeners() {
         }
     });
 
-    // 添加鼠标移动事件以显示预览线
+    // 添加鼠标移���事件以显示预览线
     plot.addEventListener('mousemove', function(e) {
         if (!isDrawing || currentPoints.length === 0) return;
 
@@ -153,6 +196,10 @@ function setupEventListeners() {
 
         updateDrawingWithPreview(dataX, dataY);
     });
+
+    // 添加鹰眼的初始化
+    const mainPlotDiv = document.getElementById('plot');
+    mainPlotDiv.on('plotly_relayout', updateOverviewBox);
 }
 
 // 添加带预览的更新绘制函数
@@ -448,6 +495,46 @@ function isPointInPolygon(point, polygon) {
         if (intersect) inside = !inside;
     }
     return inside;
+}
+
+// 添加更新鹰眼框的函数
+function updateOverviewBox(eventData) {
+    if (!eventData) return;
+    
+    // 获取主图表的当前范围
+    const xaxis = mainPlot._fullLayout.xaxis;
+    const yaxis = mainPlot._fullLayout.yaxis;
+    
+    // 获取完整的数据范围
+    const fullXRange = [0, 100];  // 根据你的数据范围调整
+    const fullYRange = [0, 100];
+    
+    // 如果发生了缩放
+    if (eventData['xaxis.range[0]'] !== undefined || eventData['xaxis.autorange']) {
+        const currentXRange = xaxis.range;
+        const currentYRange = yaxis.range;
+        
+        // 创建表示当前视图的矩形
+        const shapes = [{
+            type: 'rect',
+            x0: currentXRange[0],
+            x1: currentXRange[1],
+            y0: currentYRange[0],
+            y1: currentYRange[1],
+            fillcolor: 'rgba(255,255,255,0.3)',
+            line: {
+                color: 'rgb(255,0,0)',
+                width: 1
+            }
+        }];
+        
+        // 更新鹰眼图表的范围和矩形
+        Plotly.relayout(overviewPlot, {
+            'shapes': shapes,
+            'xaxis.range': fullXRange,
+            'yaxis.range': fullYRange
+        });
+    }
 }
 
 // 初始化
