@@ -58,3 +58,27 @@ button {
     transform: translateX(-50%);
     overflow-y: auto;
 }
+
+.action-btn {
+    padding: 3px 8px;
+    margin: 0 2px;
+    font-size: 12px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    border-radius: 3px;
+}
+
+.action-btn:hover {
+    background-color: #f0f0f0;
+}
+
+.delete-btn {
+    color: #ff4444;
+    border-color: #ff4444;
+}
+
+.delete-btn:hover {
+    background-color: #ff4444;
+    color: white;
+}

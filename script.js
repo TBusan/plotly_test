@@ -154,7 +154,7 @@ document.getElementById('exitSelectMode').addEventListener('click', function() {
 
 // 3 & 4. 隐藏和显示点
 document.getElementById('hidePoints').addEventListener('click', function() {
-    if (selectedPoints.size === 0) return; // 如果没有选中的点��直接返回
+    if (selectedPoints.size === 0) return; // 如果没有选中的点直接返回
     
     // 将选中的点添加到隐藏集合中
     selectedPoints.forEach(index => {
@@ -300,7 +300,7 @@ function finishDrawing() {
     });
 }
 
-// 添加更新信息面板的函数
+// 修改 updateInfoPanel 函数
 function updateInfoPanel() {
     const infoDiv = document.getElementById('info');
     let html = '<div style="padding: 10px; overflow-y: auto; height: 100%;">';
@@ -311,10 +311,20 @@ function updateInfoPanel() {
         drawingRecords.lines.forEach((record, index) => {
             html += `
                 <div style="margin-bottom: 10px; padding: 5px; border: 1px solid #eee;">
-                    <strong>折线 ${index + 1}</strong> - ${record.timestamp}<br>
-                    点数：${record.points.length}<br>
-                    点坐标：<br>
-                    ${record.points.map((p, i) => `点${i + 1}: (${p.x}, ${p.y})`).join('<br>')}
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <strong>折线 ${index + 1}</strong>
+                        <div>
+                            <button onclick="locateDrawing('line', ${index})" class="action-btn">定位</button>
+                            <button onclick="updateDrawingStyle('line', ${index})" class="action-btn">更改样式</button>
+                            <button onclick="deleteDrawing('line', ${index})" class="action-btn delete-btn">删除</button>
+                        </div>
+                    </div>
+                    <div style="margin-top: 5px;">
+                        时间：${record.timestamp}<br>
+                        点数：${record.points.length}<br>
+                        点坐标：<br>
+                        ${record.points.map((p, i) => `点${i + 1}: (${p.x}, ${p.y})`).join('<br>')}
+                    </div>
                 </div>
             `;
         });
@@ -326,10 +336,20 @@ function updateInfoPanel() {
         drawingRecords.polygons.forEach((record, index) => {
             html += `
                 <div style="margin-bottom: 10px; padding: 5px; border: 1px solid #eee;">
-                    <strong>多边形 ${index + 1}</strong> - ${record.timestamp}<br>
-                    顶点数：${record.points.length}<br>
-                    顶点坐标：<br>
-                    ${record.points.map((p, i) => `顶点${i + 1}: (${p.x}, ${p.y})`).join('<br>')}
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <strong>多边形 ${index + 1}</strong>
+                        <div>
+                            <button onclick="locateDrawing('polygon', ${index})" class="action-btn">定位</button>
+                            <button onclick="updateDrawingStyle('polygon', ${index})" class="action-btn">更改样式</button>
+                            <button onclick="deleteDrawing('polygon', ${index})" class="action-btn delete-btn">删除</button>
+                        </div>
+                    </div>
+                    <div style="margin-top: 5px;">
+                        时间：${record.timestamp}<br>
+                        顶点数：${record.points.length}<br>
+                        顶点坐标：<br>
+                        ${record.points.map((p, i) => `顶点${i + 1}: (${p.x}, ${p.y})`).join('<br>')}
+                    </div>
                 </div>
             `;
         });
@@ -337,6 +357,64 @@ function updateInfoPanel() {
     
     html += '</div>';
     infoDiv.innerHTML = html;
+}
+
+// 添加删除绘制的函数
+function deleteDrawing(type, index) {
+    if (type === 'line') {
+        drawings.lines.splice(index, 1);
+        drawingRecords.lines.splice(index, 1);
+    } else if (type === 'polygon') {
+        drawings.polygons.splice(index, 1);
+        drawingRecords.polygons.splice(index, 1);
+    }
+    updatePlot();
+    updateInfoPanel();
+}
+
+// 添加定位绘制的函数
+function locateDrawing(type, index) {
+    let points;
+    if (type === 'line') {
+        points = drawings.lines[index].points;
+    } else if (type === 'polygon') {
+        points = drawings.polygons[index].points;
+    }
+
+    // 计算绘制内容的边界框
+    const xCoords = points.map(p => p[0]);
+    const yCoords = points.map(p => p[1]);
+    const xMin = Math.min(...xCoords);
+    const xMax = Math.max(...xCoords);
+    const yMin = Math.min(...yCoords);
+    const yMax = Math.max(...yCoords);
+
+    // 设置视图以显示绘制内容（添加一些边距）
+    const margin = 10;
+    Plotly.relayout('plot', {
+        'xaxis.range': [xMin - margin, xMax + margin],
+        'yaxis.range': [yMin - margin, yMax + margin]
+    });
+}
+
+// 添加更新绘制样式的函数
+function updateDrawingStyle(type, index) {
+    if (type === 'line') {
+        const newStyle = {
+            color: `rgb(${Math.random()*255},${Math.random()*255},${Math.random()*255})`,
+            width: Math.random() * 5 + 1,
+            dash: ['solid', 'dot', 'dash'][Math.floor(Math.random() * 3)]
+        };
+        drawings.lines[index].style = {...drawings.lines[index].style, ...newStyle};
+    } else if (type === 'polygon') {
+        const newStyle = {
+            fillcolor: `rgba(${Math.random()*255},${Math.random()*255},${Math.random()*255},0.3)`,
+            linecolor: `rgb(${Math.random()*255},${Math.random()*255},${Math.random()*255})`,
+            linewidth: Math.random() * 5 + 1
+        };
+        drawings.polygons[index].style = {...drawings.polygons[index].style, ...newStyle};
+    }
+    updatePlot();
 }
 
 // 8. 清除按钮
@@ -378,7 +456,7 @@ document.getElementById('updateAllPolygons').addEventListener('click', function(
     updatePlot();
 });
 
-// 11. 更新单个线段样式
+// 11. 更新单个线���样式
 document.getElementById('updateSingleLine').addEventListener('click', function() {
     // 实现更新单个线段样式的逻辑
     if (drawings.lines.length === 0) return;
@@ -465,7 +543,7 @@ function updatePlot() {
         }
     });
 
-    // 更新基础散点图的数据
+    // ���新基础散点图的数据
     const baseTrace = {
         ...data[0],
         marker: {
