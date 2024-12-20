@@ -20,10 +20,27 @@ button {
     stroke-width: 2px;
 }
 
-.drawing-cursor {
-    cursor: crosshair;
+.drawing-cursor .main-svg {
+    cursor: crosshair !important;
 }
 
-.select-cursor {
-    cursor: pointer;
+.select-cursor .main-svg {
+    cursor: default !important;
+}
+
+.default-cursor .main-svg {
+    cursor: move !important;
+}
+
+/* 确保鼠标样式应用到所有可交互元素 */
+.select-cursor .nsewdrag {
+    cursor: default !important;
+}
+
+.default-cursor .nsewdrag {
+    cursor: move !important;
+}
+
+.drawing-cursor .nsewdrag {
+    cursor: crosshair !important;
 } 

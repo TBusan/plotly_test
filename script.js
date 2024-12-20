@@ -38,10 +38,42 @@ function createScatterPlot() {
     layout = {
         dragmode: 'pan',
         hovermode: 'closest',
-        showlegend: false
+        showlegend: false,
+        xaxis: {
+            autorange: true,
+            showgrid: true,
+            zeroline: true,
+            showline: true,
+            scaleanchor: 'y',
+            constrain: 'domain',
+            constraintoward: 'center'
+        },
+        yaxis: {
+            autorange: true,
+            showgrid: true,
+            zeroline: true,
+            showline: true,
+            scaleanchor: 'x',
+            constrain: 'domain',
+            constraintoward: 'center'
+        }
     };
 
-    Plotly.newPlot('plot', data, layout);
+    const config = {
+        scrollZoom: true,
+        displayModeBar: true,
+        modeBarButtonsToAdd: ['zoom2d', 'pan2d', 'resetScale2d']
+    };
+
+    Plotly.newPlot('plot', data, layout, config).then(() => {
+        // 在图表完全加载后设置默认鼠标样式
+        const plot = document.getElementById('plot');
+        plot.classList.add('default-cursor');
+        const mainSvg = plot.querySelector('.main-svg');
+        if (mainSvg) {
+            mainSvg.style.cursor = 'move';
+        }
+    });
 
     // 修改点击事件监听器
 document.getElementById('plot').on('plotly_click', function(eventData) {
@@ -77,12 +109,18 @@ document.getElementById('plot').on('plotly_click', function(eventData) {
 // 2. 选择模式
 document.getElementById('selectMode').addEventListener('click', function() {
     const plot = document.getElementById('plot');
-    plot.classList.add('select-cursor');
+    plot.classList.remove('default-cursor');
     plot.classList.remove('drawing-cursor');
+    plot.classList.add('select-cursor');
     drawingMode = null;
-    isSelectMode = true;  // 设置选择模式状态
+    isSelectMode = true;
     
-    // 重置布局为非绘制模式
+    // 强制更新鼠标样式
+    const mainSvg = plot.querySelector('.main-svg');
+    if (mainSvg) {
+        mainSvg.style.cursor = 'default';
+    }
+    
     Plotly.relayout('plot', {
         dragmode: 'pan'
     });
@@ -92,15 +130,18 @@ document.getElementById('selectMode').addEventListener('click', function() {
 document.getElementById('exitSelectMode').addEventListener('click', function() {
     const plot = document.getElementById('plot');
     plot.classList.remove('select-cursor');
-    isSelectMode = false;  // 退出选择模式
+    plot.classList.add('default-cursor');
+    isSelectMode = false;
     
-    // 清除所有选中的点
+    // 强制更新鼠标样式
+    const mainSvg = plot.querySelector('.main-svg');
+    if (mainSvg) {
+        mainSvg.style.cursor = 'move';
+    }
+    
     selectedPoints.clear();
-    
-    // 更新图表显示，重置所有点的样式
     updatePlot();
     
-    // 重置为默认的拖动模式
     Plotly.relayout('plot', {
         dragmode: 'pan'
     });
@@ -145,13 +186,20 @@ document.getElementById('drawPolygon').addEventListener('click', function() {
 
 function setupDrawingMode() {
     const plot = document.getElementById('plot');
-    plot.classList.add('drawing-cursor');
+    plot.classList.remove('default-cursor');
     plot.classList.remove('select-cursor');
+    plot.classList.add('drawing-cursor');
+    
+    // 强制更新鼠标样式
+    const mainSvg = plot.querySelector('.main-svg');
+    if (mainSvg) {
+        mainSvg.style.cursor = 'crosshair';
+    }
+    
     currentDrawing = [];
     
-    // 更改布局为绘制模式
     Plotly.relayout('plot', {
-        dragmode: false  // 禁用拖动以便绘制
+        dragmode: false
     });
 }
 
@@ -181,7 +229,7 @@ document.getElementById('plot').addEventListener('click', function(event) {
 
 // 添加右键事件监听器
 document.getElementById('plot').addEventListener('contextmenu', function(event) {
-    event.preventDefault(); // 阻止默认的右键菜单
+    event.preventDefault(); // 止默认的右键菜单
     
     if (!drawingMode) return;
     
