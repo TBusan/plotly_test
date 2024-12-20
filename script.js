@@ -55,34 +55,38 @@ function createScatterPlot() {
 
     Plotly.newPlot('plot', data, layout);
 
-    // 添加点击事件监听器
-    document.getElementById('plot').on('plotly_click', function(eventData) {
-        if (!drawingMode && isSelectMode) {  // 只在选择模式下处理点击选择
-            const pointIndex = eventData.points[0].pointIndex;
-            
-            if (selectedPoints.has(pointIndex)) {
-                selectedPoints.delete(pointIndex);
-            } else {
-                selectedPoints.add(pointIndex);
-            }
+    // 修改点击事件监听器
+document.getElementById('plot').on('plotly_click', function(eventData) {
+    // 添加对 isSelectMode 的严格检查
+    if (!isSelectMode || drawingMode) return;  // 如果不是选择模式或在绘制模式下，直接返回
+    
+    const pointIndex = eventData.points[0].pointIndex;
+    
+    if (selectedPoints.has(pointIndex)) {
+        selectedPoints.delete(pointIndex);
+    } else {
+        selectedPoints.add(pointIndex);
+    }
 
-            // 更新选中点的样式
-            const selectedStyle = new Array(data[0].x.length).fill(false);
-            selectedPoints.forEach(index => {
-                selectedStyle[index] = true;
-            });
-
-            Plotly.restyle('plot', {
-                'marker.color': [selectedStyle.map((isSelected, i) => 
-                    isSelected ? 'red' : data[0].marker.color[i]
-                )],
-                'marker.size': [selectedStyle.map(isSelected => 
-                    isSelected ? 12 : 10
-                )]
-            }, [0]);
-        }
+    // 更新选中点的样式
+    const selectedStyle = new Array(data[0].x.length).fill(false);
+    selectedPoints.forEach(index => {
+        selectedStyle[index] = true;
     });
+
+    Plotly.restyle('plot', {
+        'marker.color': [selectedStyle.map((isSelected, i) => 
+            isSelected ? 'red' : data[0].marker.color[i]
+        )],
+        'marker.size': [selectedStyle.map(isSelected => 
+            isSelected ? 12 : 10
+        )]
+    }, [0]);
+});
+
 }
+
+
 
 // 2. 选择模式
 document.getElementById('selectMode').addEventListener('click', function() {
@@ -98,7 +102,7 @@ document.getElementById('selectMode').addEventListener('click', function() {
     });
 });
 
-// 添加退出选择模式按钮的处理函数
+// 修改退出选择模式按钮的处理函数
 document.getElementById('exitSelectMode').addEventListener('click', function() {
     const plot = document.getElementById('plot');
     plot.classList.remove('select-cursor');
@@ -109,6 +113,11 @@ document.getElementById('exitSelectMode').addEventListener('click', function() {
     
     // 更新图表显示，重置所有点的样式
     updatePlot();
+    
+    // 重置为默认的拖动模式
+    Plotly.relayout('plot', {
+        dragmode: 'pan'
+    });
 });
 
 // 3 & 4. 隐藏和显示点
@@ -292,7 +301,7 @@ document.getElementById('updateSingleLine').addEventListener('click', function()
 
 // 辅助函数
 function updatePointsVisibility() {
-    // 创建一���新的颜色数组，隐藏的点设置为透明
+    // 创建一个新的颜色数组，隐藏的点设置为透明
     const colors = data[0].x.map((_, i) => {
         if (hiddenPoints.has(i)) {
             return 'rgba(0,0,0,0)'; // 完全透明
