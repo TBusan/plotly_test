@@ -8,6 +8,7 @@ let drawings = {
     lines: [],
     polygons: []
 };
+let isSelectMode = false;  // 添加选择模式状态标志
 
 // 1. 创建散点图
 function createScatterPlot() {
@@ -56,7 +57,7 @@ function createScatterPlot() {
 
     // 添加点击事件监听器
     document.getElementById('plot').on('plotly_click', function(eventData) {
-        if (!drawingMode) {  // 只在非绘制模式下处理点击选择
+        if (!drawingMode && isSelectMode) {  // 只在选择模式下处理点击选择
             const pointIndex = eventData.points[0].pointIndex;
             
             if (selectedPoints.has(pointIndex)) {
@@ -89,11 +90,25 @@ document.getElementById('selectMode').addEventListener('click', function() {
     plot.classList.add('select-cursor');
     plot.classList.remove('drawing-cursor');
     drawingMode = null;
+    isSelectMode = true;  // 设置选择模式状态
     
-    // 布局为非绘制模式
+    // 重置布局为非绘制模式
     Plotly.relayout('plot', {
         dragmode: 'pan'
     });
+});
+
+// 添加退出选择模式按钮的处理函数
+document.getElementById('exitSelectMode').addEventListener('click', function() {
+    const plot = document.getElementById('plot');
+    plot.classList.remove('select-cursor');
+    isSelectMode = false;  // 退出选择模式
+    
+    // 清除所有选中的点
+    selectedPoints.clear();
+    
+    // 更新图表显示，重置所有点的样式
+    updatePlot();
 });
 
 // 3 & 4. 隐藏和显示点
@@ -277,7 +292,7 @@ document.getElementById('updateSingleLine').addEventListener('click', function()
 
 // 辅助函数
 function updatePointsVisibility() {
-    // 创建一个新的颜色数组，隐藏的点设置为透明
+    // 创建一���新的颜色数组，隐藏的点设置为透明
     const colors = data[0].x.map((_, i) => {
         if (hiddenPoints.has(i)) {
             return 'rgba(0,0,0,0)'; // 完全透明
