@@ -9,6 +9,7 @@ let drawings = {
     polygons: []
 };
 let isSelectMode = false;  // 添加选择模式状态标志
+let currentMousePosition = null;
 
 // 1. 创建散点图
 function createScatterPlot() {
@@ -149,7 +150,7 @@ document.getElementById('exitSelectMode').addEventListener('click', function() {
 
 // 3 & 4. 隐藏和显示点
 document.getElementById('hidePoints').addEventListener('click', function() {
-    if (selectedPoints.size === 0) return; // 如果没有选中的点，直接返回
+    if (selectedPoints.size === 0) return; // 如果没有选中的点，直���返回
     
     // 将选中的点添加到隐藏集合中
     selectedPoints.forEach(index => {
@@ -197,6 +198,7 @@ function setupDrawingMode() {
     }
     
     currentDrawing = [];
+    currentMousePosition = null;
     
     Plotly.relayout('plot', {
         dragmode: false
@@ -242,6 +244,7 @@ function finishDrawing() {
         // 如果点数不足，取消绘制
         currentDrawing = [];
         drawingMode = null;
+        currentMousePosition = null;
         return;
     }
     
@@ -269,6 +272,7 @@ function finishDrawing() {
     // 重置绘制状态
     currentDrawing = [];
     drawingMode = null;
+    currentMousePosition = null;
     
     // 更新图表显示
     updatePlot();
@@ -354,22 +358,38 @@ function updatePointsVisibility() {
 }
 
 function updateDrawing() {
-    if (currentDrawing.length < 2) return;
+    if (currentDrawing.length < 1) return;
+    
+    let traceX = currentDrawing.map(p => p[0]);
+    let traceY = currentDrawing.map(p => p[1]);
+    
+    // 添加当前鼠标位置的预览线
+    if (currentMousePosition) {
+        traceX = [...traceX, currentMousePosition[0]];
+        traceY = [...traceY, currentMousePosition[1]];
+    }
+    
+    // 如果是多边形模式且有超过2个点，添加到起始点的预览线
+    if (drawingMode === 'polygon' && currentDrawing.length > 2) {
+        traceX.push(currentDrawing[0][0]);
+        traceY.push(currentDrawing[0][1]);
+    }
     
     const trace = {
         type: 'scatter',
-        mode: 'lines+markers',  // 添加markers以显示点
-        x: currentDrawing.map(p => p[0]),
-        y: currentDrawing.map(p => p[1]),
-        line: { color: 'red', width: 2 },
-        marker: { color: 'red', size: 8 }  // 添加点的样式
+        mode: 'lines+markers',
+        x: traceX,
+        y: traceY,
+        line: { 
+            color: 'red', 
+            width: 2,
+            dash: currentMousePosition ? 'dash' : 'solid' // 预览线使用虚线
+        },
+        marker: { 
+            color: 'red', 
+            size: 8 
+        }
     };
-    
-    // 如果是多边形模式，添加闭合线
-    if (drawingMode === 'polygon' && currentDrawing.length > 2) {
-        trace.x.push(currentDrawing[0][0]);
-        trace.y.push(currentDrawing[0][1]);
-    }
     
     // 更新图表，保持之前的所有内容
     updatePlot();
@@ -430,6 +450,24 @@ function updatePlot() {
     
     Plotly.react('plot', traces, layout);
 }
+
+// 添加鼠标移动事件监听器
+document.getElementById('plot').addEventListener('mousemove', function(event) {
+    if (!drawingMode || currentDrawing.length === 0) return;
+    
+    const plotRect = event.target.getBoundingClientRect();
+    const x = event.clientX - plotRect.left;
+    const y = event.clientY - plotRect.top;
+    
+    // 转换坐标到数据空间
+    const xaxis = plot._fullLayout.xaxis;
+    const yaxis = plot._fullLayout.yaxis;
+    const dataX = xaxis.p2d(x);
+    const dataY = yaxis.p2d(y);
+    
+    currentMousePosition = [dataX, dataY];
+    updateDrawing();
+});
 
 // 初始化
 createScatterPlot(); 
