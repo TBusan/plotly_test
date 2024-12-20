@@ -84,7 +84,7 @@ document.getElementById('selectMode').addEventListener('click', function() {
     plot.classList.remove('drawing-cursor');
     drawingMode = null;
     
-    // 重置布局为非绘制模式
+    // 置布局为非绘制模式
     Plotly.relayout('plot', {
         dragmode: 'pan'
     });
@@ -92,15 +92,28 @@ document.getElementById('selectMode').addEventListener('click', function() {
 
 // 3 & 4. 隐藏和显示点
 document.getElementById('hidePoints').addEventListener('click', function() {
-    // 实现隐藏选中点的逻辑
-    selectedPoints.forEach(index => hiddenPoints.add(index));
-    updatePointsVisibility();
+    if (selectedPoints.size === 0) return; // 如果没有选中的点，直接返回
+    
+    // 将选中的点添加到隐藏集合中
+    selectedPoints.forEach(index => {
+        hiddenPoints.add(index);
+    });
+    
+    // 清空选中的点
+    selectedPoints.clear();
+    
+    // 更新整个图表
+    updatePlot();
 });
 
 document.getElementById('showPoints').addEventListener('click', function() {
-    // 显示所有隐藏的点
+    if (hiddenPoints.size === 0) return; // 如果没有隐藏的点，直接返回
+    
+    // 清空隐藏的点集合
     hiddenPoints.clear();
-    updatePointsVisibility();
+    
+    // 更新整个图表
+    updatePlot();
 });
 
 // 5 & 6. 绘制功能
@@ -198,8 +211,27 @@ document.getElementById('updateSingleLine').addEventListener('click', function()
 
 // 辅助函数
 function updatePointsVisibility() {
-    const visibility = data[0].x.map((_, i) => !hiddenPoints.has(i));
-    Plotly.restyle('plot', {'visible': [visibility]}, [0]);
+    // 创建一个新的颜色数组，隐藏的点设置为透明
+    const colors = data[0].x.map((_, i) => {
+        if (hiddenPoints.has(i)) {
+            return 'rgba(0,0,0,0)'; // 完全透明
+        }
+        return selectedPoints.has(i) ? 'red' : data[0].marker.color[i];
+    });
+
+    // 创建一个新的大小数组
+    const sizes = data[0].x.map((_, i) => {
+        if (hiddenPoints.has(i)) {
+            return 0; // 隐藏的点大小设为0
+        }
+        return selectedPoints.has(i) ? 12 : 10;
+    });
+
+    // 更新点的样式
+    Plotly.restyle('plot', {
+        'marker.color': [colors],
+        'marker.size': [sizes]
+    }, [0]);
 }
 
 function updateDrawing() {
@@ -218,9 +250,34 @@ function updateDrawing() {
 }
 
 function updatePlot() {
-    // 更新所有绘制的内容
-    const traces = [data[0]];
+    // 创建基础散点图的颜色和大小数组
+    const colors = data[0].x.map((_, i) => {
+        if (hiddenPoints.has(i)) {
+            return 'rgba(0,0,0,0)'; // 完全透明
+        }
+        return selectedPoints.has(i) ? 'red' : data[0].marker.color[i];
+    });
+
+    const sizes = data[0].x.map((_, i) => {
+        if (hiddenPoints.has(i)) {
+            return 0; // 隐藏的点大小设为0
+        }
+        return selectedPoints.has(i) ? 12 : 10;
+    });
+
+    // 更新基础散点图的数据
+    const baseTrace = {
+        ...data[0],
+        marker: {
+            ...data[0].marker,
+            color: colors,
+            size: sizes
+        }
+    };
+
+    const traces = [baseTrace];
     
+    // 添加线段和多边形
     drawings.lines.forEach(line => {
         traces.push({
             type: 'scatter',
