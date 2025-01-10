@@ -20,6 +20,9 @@ let isEditMode = false;
 let currentSelectedPoint = null;  // 存储当前选中点的信息
 let myPlot = null;
 
+// 添加滑动条相关的全局变量
+let lastSliderValue = 0;
+
 // 初始化折线图
 function initPlot() {
     const data = generateData();
@@ -148,6 +151,36 @@ function setupEventListeners() {
             );
         }
     });
+
+    // 添加滑动条事件监听
+    const slider = document.getElementById('valueSlider');
+    const sliderValue = document.getElementById('sliderValue');
+    
+    slider.addEventListener('input', function(e) {
+        if (!currentSelectedPoint) return;
+        
+        const currentValue = parseFloat(e.target.value);
+        sliderValue.textContent = currentValue;
+        
+        // 计算值的变化量
+        const delta = currentValue - lastSliderValue;
+        if (delta !== 0) {
+            updatePointValueByDelta(
+                currentSelectedPoint.curveNumber,
+                currentSelectedPoint.pointIndex,
+                delta
+            );
+            lastSliderValue = currentValue;
+        }
+    });
+
+    // 添加滑动条释放事件
+    slider.addEventListener('change', function() {
+        // 重置滑动条
+        slider.value = 0;
+        sliderValue.textContent = '0';
+        lastSliderValue = 0;
+    });
 }
 
 // 更新点的颜色
@@ -173,9 +206,16 @@ function toggleEditMode() {
         'dragmode': isEditMode ? false : 'pan'
     });
     
-    // 更新按钮状态
+    // 更新按钮和滑动条状态
     document.getElementById('editButton').style.display = isEditMode ? 'none' : 'inline-block';
     document.getElementById('exitEditButton').style.display = isEditMode ? 'inline-block' : 'none';
+    document.querySelector('.slider-container').style.display = isEditMode ? 'flex' : 'none';
+
+    // 重置滑动条
+    const slider = document.getElementById('valueSlider');
+    slider.value = 0;
+    document.getElementById('sliderValue').textContent = '0';
+    lastSliderValue = 0;
 
     // 如果是退出编辑模式，清除选中的点
     if (!isEditMode) {
@@ -217,6 +257,24 @@ function updatePointValue(curveNumber, pointIndex) {
     // 创建新的y值数组
     const updatedY = [...points];
     updatedY[pointIndex] = newValue;
+
+    // 更新图表
+    Plotly.restyle(myPlot, {
+        'y': [updatedY]
+    }, [curveNumber]);
+
+    // 保持点的选中状态和高亮显示
+    updatePointColor(curveNumber, pointIndex, true);
+}
+
+// 添加通过增量更新点值的函数
+function updatePointValueByDelta(curveNumber, pointIndex, delta) {
+    const trace = myPlot.data[curveNumber];
+    const points = trace.y;
+    
+    // 创建新的y值数组
+    const updatedY = [...points];
+    updatedY[pointIndex] = points[pointIndex] + delta;
 
     // 更新图表
     Plotly.restyle(myPlot, {
