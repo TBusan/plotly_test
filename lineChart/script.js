@@ -135,6 +135,19 @@ function setupEventListeners() {
             currentSelectedPoint = newPoint;
         }
     });
+
+    // 添加键盘事件监听
+    document.addEventListener('keydown', function(e) {
+        if (!isEditMode || !currentSelectedPoint) return;
+        
+        // 监听 Delete 键
+        if (e.key === 'Delete') {
+            updatePointValue(
+                currentSelectedPoint.curveNumber,
+                currentSelectedPoint.pointIndex
+            );
+        }
+    });
 }
 
 // 更新点的颜色
@@ -181,6 +194,37 @@ function clearSelection() {
         );
         currentSelectedPoint = null;
     }
+}
+
+// 添加更新点值的函数
+function updatePointValue(curveNumber, pointIndex) {
+    const trace = myPlot.data[curveNumber];
+    const points = trace.y;
+    let newValue;
+
+    // 根据不同情况计算新值
+    if (pointIndex === 0) {
+        // 如果是第一个点，使用下一个点的值
+        newValue = points[1];
+    } else if (pointIndex === points.length - 1) {
+        // 如果是最后一个点，使用前一个点的值
+        newValue = points[pointIndex - 1];
+    } else {
+        // 其他情况，使用前后点的平均值
+        newValue = (points[pointIndex - 1] + points[pointIndex + 1]) / 2;
+    }
+
+    // 创建新的y值数组
+    const updatedY = [...points];
+    updatedY[pointIndex] = newValue;
+
+    // 更新图表
+    Plotly.restyle(myPlot, {
+        'y': [updatedY]
+    }, [curveNumber]);
+
+    // 保持点的选中状态和高亮显示
+    updatePointColor(curveNumber, pointIndex, true);
 }
 
 // 页面加载完成后初始化图表
