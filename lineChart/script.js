@@ -20,11 +20,11 @@ function initPlot() {
     const data = generateData();
     
     const trace1 = {
-        type: 'scatter',  // 使用scatter类型来创建折线图
-        mode: 'lines+markers',  // 显示线条和数据点
+        type: 'scatter',
+        mode: 'lines+markers',
         x: data.x,
         y: data.y1,
-        name: '数据1',  // 图例名称
+        name: '数据1',
         line: {
             color: 'rgb(219, 64, 82)',
             width: 2
@@ -53,6 +53,7 @@ function initPlot() {
 
     const layout = {
         title: '折线图示例',
+        dragmode: 'pan',  // 设置默认模式为移动（pan）
         xaxis: {
             title: 'X轴',
             showgrid: true,
@@ -82,7 +83,10 @@ function initPlot() {
 
     const config = {
         responsive: true,
-        displayModeBar: false  // 隐藏工具栏
+        displayModeBar: true,  // 显示工具栏以便切换模式
+        displaylogo: false,    // 不显示 plotly logo
+        modeBarButtonsToRemove: ['select2d', 'lasso2d'], // 移除选择工具
+        scrollZoom: true      // 启用滚轮缩放
     };
 
     Plotly.newPlot('plot', [trace1, trace2], layout, config);
