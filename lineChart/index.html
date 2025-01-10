@@ -3,14 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plotly Contour Plot</title>
+    <title>Plotly Line Chart</title>
     <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <script src="script.js"></script>
     <div class="container">
+        <div class="buttons">
+            <button id="editButton" onclick="toggleEditMode()">进入编辑模式</button>
+            <button id="exitEditButton" onclick="toggleEditMode()" style="display: none;">退出编辑模式</button>
+        </div>
         <div id="plot"></div>
     </div>
-   
+    <script src="script.js"></script>
 </body>
 </html> 

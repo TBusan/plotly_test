@@ -15,6 +15,11 @@ function generateData() {
     return { x, y1, y2 };
 }
 
+// 添加全局变量来跟踪状态
+let isEditMode = false;
+let currentSelectedPoint = null;  // 存储当前选中点的信息
+let myPlot = null;
+
 // 初始化折线图
 function initPlot() {
     const data = generateData();
@@ -31,7 +36,8 @@ function initPlot() {
         },
         marker: {
             size: 6,
-            symbol: 'circle'
+            symbol: 'circle',
+            color: 'rgb(219, 64, 82)'  // 初始颜色
         }
     };
     
@@ -47,13 +53,14 @@ function initPlot() {
         },
         marker: {
             size: 6,
-            symbol: 'circle'
+            symbol: 'circle',
+            color: 'rgb(55, 128, 191)'  // 初始颜色
         }
     };
 
     const layout = {
         title: '折线图示例',
-        dragmode: 'pan',  // 设置默认模式为移动（pan）
+        dragmode: 'pan',
         xaxis: {
             title: 'X轴',
             showgrid: true,
@@ -83,14 +90,100 @@ function initPlot() {
 
     const config = {
         responsive: true,
-        displayModeBar: true,  // 显示工具栏以便切换模式
-        displaylogo: false,    // 不显示 plotly logo
-        modeBarButtonsToRemove: ['select2d', 'lasso2d'], // 移除选择工具
-        scrollZoom: true      // 启用滚轮缩放
+        displayModeBar: true,
+        displaylogo: false,
+        modeBarButtonsToRemove: ['select2d', 'lasso2d'],
+        scrollZoom: true
     };
 
-    Plotly.newPlot('plot', [trace1, trace2], layout, config);
+    Plotly.newPlot('plot', [trace1, trace2], layout, config).then(function(gd) {
+        myPlot = gd;
+        setupEventListeners();
+    });
+}
+
+// 设置事件监听器
+function setupEventListeners() {
+    // 添加点击事件监听
+    myPlot.on('plotly_click', function(data) {
+        if (!isEditMode) return;  // 如果不在编辑模式，直接返回
+        
+        const pt = data.points[0];
+        const curveNumber = pt.curveNumber;
+        const pointIndex = pt.pointIndex;
+        const newPoint = { curveNumber, pointIndex };
+
+        // 如果点击的是当前选中的点，取消选中
+        if (currentSelectedPoint && 
+            currentSelectedPoint.curveNumber === curveNumber && 
+            currentSelectedPoint.pointIndex === pointIndex) {
+            updatePointColor(curveNumber, pointIndex, false);
+            currentSelectedPoint = null;
+        } 
+        // 如果点击的是新的点
+        else {
+            // 如果之前有选中的点，先恢复其颜色
+            if (currentSelectedPoint) {
+                updatePointColor(
+                    currentSelectedPoint.curveNumber,
+                    currentSelectedPoint.pointIndex,
+                    false
+                );
+            }
+            // 高亮新选中的点
+            updatePointColor(curveNumber, pointIndex, true);
+            currentSelectedPoint = newPoint;
+        }
+    });
+}
+
+// 更新点的颜色
+function updatePointColor(curveNumber, pointIndex, isSelected) {
+    const trace = myPlot.data[curveNumber];
+    const colors = Array.isArray(trace.marker.color) ? 
+        [...trace.marker.color] : 
+        Array(trace.x.length).fill(trace.marker.color);
+    
+    colors[pointIndex] = isSelected ? 'yellow' : trace.line.color;
+    
+    Plotly.restyle(myPlot, {
+        'marker.color': [colors]
+    }, [curveNumber]);
+}
+
+// 切换编辑模式
+function toggleEditMode() {
+    isEditMode = !isEditMode;
+    
+    // 更新布局和交互模式
+    Plotly.relayout(myPlot, {
+        'dragmode': isEditMode ? false : 'pan'
+    });
+    
+    // 更新按钮状态
+    document.getElementById('editButton').style.display = isEditMode ? 'none' : 'inline-block';
+    document.getElementById('exitEditButton').style.display = isEditMode ? 'inline-block' : 'none';
+
+    // 如果是退出编辑模式，清除选中的点
+    if (!isEditMode) {
+        clearSelection();
+    }
+}
+
+// 清除所有选中的点
+function clearSelection() {
+    // 如果有选中的点，恢复其颜色
+    if (currentSelectedPoint) {
+        updatePointColor(
+            currentSelectedPoint.curveNumber,
+            currentSelectedPoint.pointIndex,
+            false
+        );
+        currentSelectedPoint = null;
+    }
 }
 
 // 页面加载完成后初始化图表
-document.addEventListener('DOMContentLoaded', initPlot); 
+document.addEventListener('DOMContentLoaded', function() {
+    initPlot();
+}); 
