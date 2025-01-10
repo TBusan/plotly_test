@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scatter Plot with Custom Markers</title>
+    <!-- 尝试使用最新版本的 Plotly -->
+    <script src="https://cdn.plot.ly/plotly-2.35.3.min.js"></script>
+    <script>
+        // 注册多个自定义符号
+// (function() {
+//     // 自定义五角星
+//     Plotly.Plots.symbols['my-star'] = {
+//         draw: function(ctx, size) {
+//             let x = ctx.x || 0;
+//             let y = ctx.y || 0;
+//             ctx.moveTo(x, y - size);
+//             for (let i = 0; i < 5; i++) {
+//                 let angle = (i * 4 * Math.PI) / 5;
+//                 ctx.lineTo(
+//                     x + size * Math.sin(angle),
+//                     y - size * Math.cos(angle)
+//                 );
+//             }
+//             ctx.closePath();
+//         }
+//     };
+
+//     // 自定义十字
+//     Plotly.Plots.symbols['my-cross'] = {
+//         draw: function(ctx, size) {
+//             let x = ctx.x || 0;
+//             let y = ctx.y || 0;
+//             ctx.moveTo(x - size, y);
+//             ctx.lineTo(x + size, y);
+//             ctx.moveTo(x, y - size);
+//             ctx.lineTo(x, y + size);
+//         }
+//     };
+
+//     // 自定义菱形加十字
+//     Plotly.Plots.symbols['my-diamond-cross'] = {
+//         draw: function(ctx, size) {
+//             let x = ctx.x || 0;
+//             let y = ctx.y || 0;
+            
+//             // 绘制菱形
+//             ctx.moveTo(x - size, y);
+//             ctx.lineTo(x, y - size);
+//             ctx.lineTo(x + size, y);
+//             ctx.lineTo(x, y + size);
+//             ctx.closePath();
+            
+//             // 绘制十字
+//             ctx.moveTo(x - size/2, y);
+//             ctx.lineTo(x + size/2, y);
+//             ctx.moveTo(x, y - size/2);
+//             ctx.lineTo(x, y + size/2);
+//         }
+//     };
+// })();
+    </script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div id="plot"></div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

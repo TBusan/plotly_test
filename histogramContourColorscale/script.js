@@ -36,8 +36,8 @@ function generateData() {
         // 生成1-100的随机值
         values.push(Math.floor(Math.random() * 100) + 1);
     }
-    // return { x, y, values };
-    return { x:mockDataX, y:mockDataZ, values:mockDataV };
+    return { x, y, values };
+    // return { x:mockDataX, y:mockDataZ, values:mockDataV };
 }
 
 // 初始化图表

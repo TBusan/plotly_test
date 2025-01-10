@@ -61,6 +61,9 @@ function createScatterPlot() {
             scaleanchor: 'x',
             constrain: 'domain',
             constraintoward: 'center'
+        },
+        modebar: {
+            display: false
         }
     };
 
