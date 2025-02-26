@@ -30,9 +30,11 @@ function generateData() {
     return { x, y, z };
 }
 
-// 全局变量存储图表实例
+// 全局变量存储图表实例和状态
 let myPlot;
 let plotData;
+let showLabels = false; // 初始不显示标签
+let coloringMode = 'lines'; // 初始使用线条模式
 
 // 初始化图表
 function initPlot() {
@@ -64,8 +66,8 @@ function initPlot() {
         y: data.y,
         z: data.z,
         contours: {
-            // coloring: 'lines',
-            showlabels: true,
+            coloring: coloringMode,
+            showlabels: showLabels,
             labelfont: {
                 size: 12,
                 color: 'white',
@@ -108,6 +110,61 @@ function initPlot() {
     // 创建图表并保存DOM元素引用
     myPlot = document.getElementById('myDiv');
     Plotly.newPlot(myPlot, [trace], layout, config);
+    
+    // 设置按钮事件监听
+    setupEventListeners();
+}
+
+// 设置事件监听器
+function setupEventListeners() {
+    // 标签切换按钮
+    document.getElementById('toggleLabels').addEventListener('click', function() {
+        showLabels = !showLabels;
+        updatePlot();
+    });
+    
+    // 等值线模式切换按钮
+    document.getElementById('toggleColoring').addEventListener('click', function() {
+        // 在 'lines' 和 'heatmap' 之间切换
+        coloringMode = coloringMode === 'lines' ? 'heatmap' : 'lines';
+        updatePlot();
+    });
+}
+
+// 更新图表
+function updatePlot() {
+    // 计算数据范围
+    let zValues = [];
+    for (let i = 0; i < plotData.z.length; i++) {
+        zValues = zValues.concat(plotData.z[i]);
+    }
+    const zmin = Math.min(...zValues);
+    const zmax = Math.max(...zValues);
+    const threshold = 5; // 设置颜色阈值
+    
+    // 生成等值线层级
+    const step = (zmax - zmin) / 15;
+    const levels = [];
+    for (let level = zmin; level <= zmax; level += step) {
+        levels.push(level);
+    }
+    
+    // 生成颜色数组：阈值以上为红色，以下为蓝色
+    const colors = levels.map(level => level > threshold ? '#FF0000' : '#0000FF');
+    
+    // 更新图表配置
+    const update = {
+        'contours.coloring': coloringMode,
+        'contours.showlabels': showLabels
+    };
+    
+    // 如果是线条模式，设置线条颜色
+    if (coloringMode === 'lines') {
+        update['line.color'] = [colors];
+    }
+    
+    // 更新图表
+    Plotly.restyle(myPlot, update, [0]);
 }
 
 // 页面加载完成后初始化图表
