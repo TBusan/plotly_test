@@ -199,10 +199,10 @@ function setupDrawingMode() {
     plot.classList.add('drawing-cursor');
     
     // 强制更新鼠标样式
-    const mainSvg = plot.querySelector('.main-svg');
-    if (mainSvg) {
-        mainSvg.style.cursor = 'crosshair';
-    }
+    // const mainSvg = plot.querySelector('.main-svg');
+    // if (mainSvg) {
+    //     mainSvg.style.cursor = 'crosshair';
+    // }
     
     currentDrawing = [];
     currentMousePosition = null;

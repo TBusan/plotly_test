@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plotly Contour Plot</title>
+    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="controls">
+            <div class="control-group">
+                <label for="colorscale">配色方案:</label>
+                <select id="colorscale">
+                    <option value="Viridis">Viridis</option>
+                    <option value="Jet">Jet</option>
+                    <option value="Hot">Hot</option>
+                    <option value="Plasma">Plasma</option>
+                    <option value="Blues">Blues</option>
+                    <option value="Greens">Greens</option>
+                    <option value="Rainbow">Rainbow</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="contourType">等值线类型:</label>
+                <select id="contourType">
+                    <option value="heatmap">热力图</option>
+                    <option value="lines">线条</option>
+                    <option value="fill">填充</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="showLabels">显示标签:</label>
+                <input type="checkbox" id="showLabels">
+            </div>
+            <button id="updatePlot">更新图表</button>
+        </div>
+        <div id="plot"></div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
