@@ -30,6 +30,9 @@ function generateData() {
     return { x, y, z };
 }
 
+// 全局变量存储图表实例
+let myPlot;
+
 // 初始化图表
 function initPlot() {
     const data = generateData();
@@ -71,10 +74,22 @@ function initPlot() {
         displaylogo: false
     };
 
-    Plotly.newPlot('plot', [trace], layout, config);
+    // 保存图表实例
+    myPlot = Plotly.newPlot('plot', [trace], layout, config);
     
     // 添加控件事件监听
+    setupEventListeners();
+}
+
+// 设置事件监听器
+function setupEventListeners() {
+    // 更新按钮点击事件
     document.getElementById('updatePlot').addEventListener('click', updatePlot);
+    
+    // 也可以为每个控件单独添加事件监听，实现实时更新
+    document.getElementById('colorscale').addEventListener('change', updatePlot);
+    document.getElementById('contourType').addEventListener('change', updatePlot);
+    document.getElementById('showLabels').addEventListener('change', updatePlot);
 }
 
 // 更新图表
@@ -83,13 +98,17 @@ function updatePlot() {
     const contourType = document.getElementById('contourType').value;
     const showLabels = document.getElementById('showLabels').checked;
     
+    console.log("更新图表:", {colorscale, contourType, showLabels});
+    
+    // 创建更新对象
     const update = {
         'colorscale': colorscale,
         'contours.coloring': contourType,
         'contours.showlabels': showLabels
     };
     
-    Plotly.restyle('plot', update, 0);
+    // 使用正确的语法更新图表
+    Plotly.restyle('plot', update, [0]);
 }
 
 // 页面加载完成后初始化图表
