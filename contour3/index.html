@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complex Contour Plot</title>
+    <!-- <script src="https://cdn.plot.ly/plotly-latest.min.js"></script> -->
+    <script src="../plotly/plotly.js"></script>
+    <style>
+        #plot {
+            width: 100%;
+            height: 800px;
+        }
+    </style>
+</head>
+<body>
+    <div id="plot"></div>
+    <script>
+        // Generate data for the contour plot
+        function generateData() {
+            const size = 100;
+            const x = new Array(size);
+            const y = new Array(size);
+            const z = new Array(size);
+
+            for (let i = 0; i < size; i++) {
+                x[i] = -5 + (10 * i) / (size - 1);
+                z[i] = new Array(size);
+                for (let j = 0; j < size; j++) {
+                    if (i === 0) {
+                        y[j] = -5 + (10 * j) / (size - 1);
+                    }
+                    // Complex mathematical function for interesting contours
+                    const xVal = x[i];
+                    const yVal = y[j];
+                    z[i][j] = Math.sin(Math.sqrt(xVal * xVal + yVal * yVal)) * 
+                             Math.cos(xVal * 0.5) * Math.sin(yVal * 0.5) +
+                             Math.exp(-(xVal * xVal + yVal * yVal) / 50);
+                }
+            }
+            return { x, y, z };
+        }
+
+        const data = generateData();
+
+        const contourPlot = {
+            type: 'contour',
+            x: data.x,
+            y: data.y,
+            z: data.z,
+            contours: {
+                coloring: 'fill',
+                showlabels: true,
+                labelfont: {
+                    size: 12,
+                    color: 'white',
+                }
+            },
+            colorscale: [
+                // [0.0, 'rgb(255,0,0)'],    // 红
+                // [0.2, 'rgb(255,165,0)'],  // 橙
+                // [0.4, 'rgb(255,255,0)'],  // 黄
+                // [0.6, 'rgb(0,128,0)'],    // 绿
+                // [0.8, 'rgb(0,0,255)'],    // 蓝
+                // [1.0, 'rgb(128,0,128)'] 
+
+                // [0.0, 'rgb(255,0,0)'],    // 红
+                // [0.2, 'rgb(255,0,0)'],  // 橙
+                // [0.4, 'rgb(255,0,0)'],  // 黄
+                // [0.6, 'rgb(255,0,0)'],    // 绿
+                // [0.8, 'rgb(255,0,0)'],    // 蓝
+                // [1.0, 'rgb(255,0,0)'] 
+
+
+                [0.0, 'rgb(0,255,0)'],    // 红
+                [1.0, 'rgb(0,255,0)'] 
+
+            ],
+            smoothing: 0.85,
+            ncontours: 30,
+            colorbar: {
+                title: '值',
+                titleside: 'right',
+                titlefont: {
+                    size: 14,
+                    family: 'Arial, sans-serif'
+                }
+            }
+        };
+
+        const layout = {
+            title: {
+                text: '复杂等值线图示例',
+                font: {
+                    size: 24
+                }
+            },
+            xaxis: {
+                title: 'X 轴',
+                titlefont: {
+                    size: 16
+                }
+            },
+            yaxis: {
+                title: 'Y 轴',
+                titlefont: {
+                    size: 16
+                }
+            },
+            margin: {
+                l: 65,
+                r: 50,
+                b: 65,
+                t: 90
+            }
+        };
+
+        Plotly.newPlot('plot', [contourPlot], layout);
+    </script>
+</body>
+</html>
