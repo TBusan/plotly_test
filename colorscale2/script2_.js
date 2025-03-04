@@ -33,11 +33,11 @@ function interpolateColor(color1, color2, ratio) {
         const hex = c.toString(16);
         return hex.length == 1 ? "0" + hex : hex;
     };
-    
-    const r = Math.ceil(parseInt(color1.substring(1,3), 16) * (1 - ratio) + parseInt(color2.substring(1,3), 16) * ratio);
-    const g = Math.ceil(parseInt(color1.substring(3,5), 16) * (1 - ratio) + parseInt(color2.substring(3,5), 16) * ratio);
-    const b = Math.ceil(parseInt(color1.substring(5,7), 16) * (1 - ratio) + parseInt(color2.substring(5,7), 16) * ratio);
-    
+
+    const r = Math.ceil(parseInt(color1.substring(1, 3), 16) * (1 - ratio) + parseInt(color2.substring(1, 3), 16) * ratio);
+    const g = Math.ceil(parseInt(color1.substring(3, 5), 16) * (1 - ratio) + parseInt(color2.substring(3, 5), 16) * ratio);
+    const b = Math.ceil(parseInt(color1.substring(5, 7), 16) * (1 - ratio) + parseInt(color2.substring(5, 7), 16) * ratio);
+
     return "#" + hex(r) + hex(g) + hex(b);
 }
 
@@ -49,18 +49,18 @@ const maxVal = Math.max(...origincolors.map(c => c[0]));
 origincolors.forEach(point => {
     // 将原始值归一化到0-1范围
     const normalized = (point[0] - minVal) / (maxVal - minVal);
-    
+
     // 找到对应的颜色区间
     let i = 0;
-    while (i < rainbowColors.length - 1 && normalized > rainbowColors[i+1][0]) {
+    while (i < rainbowColors.length - 1 && normalized > rainbowColors[i + 1][0]) {
         i++;
     }
-    
+
     // 计算插值比例
-    const [x0, x1] = [rainbowColors[i][0], rainbowColors[i+1][0]];
+    const [x0, x1] = [rainbowColors[i][0], rainbowColors[i + 1][0]];
     const ratio = (normalized - x0) / (x1 - x0);
-    
+
     // 更新颜色值
-    point[1] = interpolateColor(rainbowColors[i][1], rainbowColors[i+1][1], ratio);
+    point[1] = interpolateColor(rainbowColors[i][1], rainbowColors[i + 1][1], ratio);
 });
 
